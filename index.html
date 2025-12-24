@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Module Information Générique</title>
+    
+    <!-- 1. LIBRAIRIES REQUISES (Tailwind CSS) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700;900&display=swap" rel="stylesheet">
+
+    <style>
+        body { font-family: 'Roboto', sans-serif; background-color: #f0fdf4; padding: 20px; }
+
+        /* --- ANIMATIONS GÉNÉRALES --- */
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+
+        /* --- ACCORDÉON (COLLAPSIBLE) --- */
+        .collapsible-wrapper {
+            max-height: 0; overflow: hidden;
+            transition: max-height 0.4s ease-in-out, opacity 0.4s ease-in-out, padding 0.4s ease;
+            opacity: 0;
+        }
+        .expanded .collapsible-wrapper { max-height: 2000px; opacity: 1; padding-bottom: 10px; }
+        .toggle-arrow { transition: transform 0.3s ease; }
+        .expanded .toggle-arrow { transform: rotate(180deg); }
+
+        /* --- BOUTON DE MISE À JOUR FLOTTANT --- */
+        #updateContainer {
+            position: fixed; bottom: 20px; right: 20px;
+            display: none; align-items: center; justify-content: flex-end;
+            z-index: 40; gap: 10px;
+        }
+        #refreshBtn {
+            background-color: #166534; color: white; border: none; border-radius: 50%;
+            width: 60px; height: 60px; font-size: 30px; cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3); display: flex;
+            justify-content: center; align-items: center; transition: transform 0.2s;
+            position: relative;
+        }
+        #refreshBtn:active { transform: scale(0.95); }
+        .update-dot {
+            position: absolute; top: 0; right: 0; width: 15px; height: 15px;
+            background-color: #ef4444; border-radius: 50%; border: 2px solid white;
+        }
+        .rotating { animation: spin 1s linear infinite; pointer-events: none; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        #updateAlert { display: flex; align-items: center; }
+        .update-text {
+            color: #166534; font-weight: bold; font-size: 12px; margin-right: 5px;
+            background: rgba(255,255,255,0.95); padding: 6px 12px; border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1); white-space: nowrap;
+        }
+        .bouncing { animation: bounceLeft 1s ease-in-out infinite; }
+        @keyframes bounceLeft { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(-5px); } }
+
+        /* --- POP-UP TUTORIEL / SLIDES --- */
+        #wn-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.7); z-index: 10000;
+            display: none; justify-content: center; align-items: center;
+            backdrop-filter: blur(5px); opacity: 0; transition: opacity 0.3s ease;
+        }
+        #wn-modal {
+            background: white; width: 90%; max-width: 400px; border-radius: 20px;
+            padding: 25px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); text-align: center;
+            position: relative; transform: translateY(20px); transition: transform 0.3s ease;
+        }
+        .show-modal { display: flex !important; opacity: 1 !important; }
+        .show-modal #wn-modal { transform: translateY(0) !important; }
+
+        .wn-badge {
+            background-color: #dcfce7; color: #166534; font-size: 10px;
+            text-transform: uppercase; font-weight: bold; padding: 4px 8px;
+            border-radius: 12px; display: inline-block; margin-bottom: 10px;
+        }
+        .wn-title { font-size: 22px; font-weight: 900; color: #1f2937; margin: 0; }
+        .wn-slides-container {
+            height: 220px; display: flex; align-items: center; justify-content: center;
+            overflow: hidden; position: relative;
+        }
+        .wn-slide { display: none; width: 100%; animation: slideIn 0.4s ease forwards; }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+        .wn-icon { font-size: 50px; margin-bottom: 15px; display: block; }
+        .wn-slide-title { font-size: 18px; font-weight: bold; color: #166534; margin-bottom: 10px; display: block; }
+        .wn-desc { font-size: 14px; color: #6b7280; line-height: 1.5; }
+        .wn-dots { display: flex; justify-content: center; gap: 8px; margin: 20px 0; }
+        .wn-dot { width: 8px; height: 8px; background-color: #e5e7eb; border-radius: 50%; transition: background-color 0.3s; }
+        .wn-dot.active { background-color: #166534; width: 20px; border-radius: 4px; }
+        #wn-btn {
+            background-color: #166534; color: white; border: none; width: 100%;
+            padding: 15px; border-radius: 12px; font-size: 16px; font-weight: bold;
+            cursor: pointer; transition: background-color 0.2s; display: flex;
+            justify-content: center; align-items: center; gap: 8px;
+        }
+        #wn-btn:hover { background-color: #14532d; }
+
+    </style>
+</head>
+<body>
+
+    <!-- 1. BOUTON DÉCLENCHEUR PRINCIPAL -->
+    <div class="flex flex-col items-center mt-20 space-y-4">
+        <button onclick="openInfoModal()" class="bg-emerald-700 hover:bg-emerald-600 text-white w-16 h-16 rounded-2xl text-2xl font-bold transition flex items-center justify-center shadow-lg border-2 border-emerald-500">
+            ℹ️
+        </button>
+        <p class="text-center text-slate-500 text-sm max-w-xs">
+            Module Info + Tuto + Update<br>
+            <span class="text-xs text-slate-400">Auto-check GitHub dans 5s (unique)</span>
+        </p>
+    </div>
+
+    <!-- 2. BOUTON MISE À JOUR FLOTTANT -->
+    <div id="updateContainer">
+        <div id="updateAlert" class="bouncing">
+            <span class="update-text">Nouvelle version dispo !</span>
+            <span class="text-emerald-800 text-2xl font-bold">➜</span> 
+        </div>
+        <button id="refreshBtn" onclick="forceUpdate()">
+            <div class="update-dot"></div>
+            &#x21bb;
+        </button>
+    </div>
+
+    <!-- 3. MODALE D'INFORMATION -->
+    <div id="info-modal-overlay" class="hidden fixed inset-0 z-40 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden fade-in border-l-8 border-emerald-600 relative">
+            <button onclick="closeInfoModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition">✕</button>
+
+            <div class="p-6 md:p-8 space-y-6">
+                <h2 class="text-2xl font-black text-slate-800 flex items-center gap-3">
+                    ℹ️ Informations
+                </h2>
+                
+                <!-- Bloc Version -->
+                <div class="bg-emerald-50 p-4 rounded-xl border border-emerald-100 relative">
+                    <div class="grid grid-cols-2 gap-4">
+                        <!-- LOCAL -->
+                        <div class="border-r border-emerald-200 pr-2">
+                            <h3 class="text-[10px] font-bold text-emerald-700 uppercase tracking-widest mb-1">Installée (Local)</h3>
+                            <div class="font-mono text-xs font-bold text-slate-700 break-all" id="info-app-version">Check...</div>
+                            <!-- Nouvel élément pour le temps -->
+                            <p class="text-[10px] text-emerald-500 mt-1 font-medium" id="info-local-time">Calcul...</p>
+                        </div>
+                        <!-- REMOTE -->
+                        <div class="pl-2 text-right">
+                             <div class="flex items-center justify-end gap-2 mb-1">
+                                <span class="text-[10px] font-bold text-emerald-700 uppercase">Disponible (GitHub)</span>
+                                <div id="connection-status" class="w-2 h-2 rounded-full bg-gray-400"></div>
+                            </div>
+                            <div class="font-mono text-xs font-bold text-emerald-600 break-all" id="info-remote-version">En attente...</div>
+                            <p class="text-[10px] text-emerald-500 mt-1">Dernier Commit</p>
+                        </div>
+                    </div>
+                    <button id="btn-update-check" onclick="checkGitHubUpdates()" class="mt-4 w-full bg-emerald-600 text-white font-bold py-2 rounded-lg hover:bg-emerald-500 disabled:opacity-50 transition text-sm flex justify-center items-center gap-2 shadow-sm">
+                        <span>🔄</span> Vérifier maintenant
+                    </button>
+                </div>
+
+                <!-- Bloc À propos avec Tuto (TEXTE COMPLET RESTAURÉ) -->
+                <div id="about-card" class="bg-white border border-slate-200 p-4 rounded-xl relative shadow-sm transition-all duration-300 hover:shadow-md cursor-pointer" onclick="toggleAccordion('about-card')">
+                    <div class="flex items-center justify-between mb-0">
+                        <div class="flex items-center gap-3">
+                            <span class="text-2xl">💡</span>
+                            <h3 class="font-bold text-slate-800 text-lg">À propos de Green Codex</h3>
+                        </div>
+                        <svg class="w-6 h-6 toggle-arrow text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </div>
+                    
+                    <div class="collapsible-wrapper cursor-text" onclick="event.stopPropagation()">
+                        <div class="text-sm text-slate-600 text-justify leading-relaxed mt-4 mb-4 border-t border-slate-100 pt-4">
+                            <p class="mb-2"><strong>Green Codex</strong> n'est pas une simple application de notes, c'est votre compagnon d'exploration cannabique. Elle a été conçue pour combler le fossé entre la science botanique et l'expérience utilisateur.</p>
+                            <p class="mb-2">Son but est double :</p>
+                            <ul class="list-disc pl-5 mb-4 space-y-1">
+                                <li><strong>Éduquer :</strong> En fournissant des fiches techniques précises sur les familles de plantes (Indica, Sativa) et les méthodes d'extraction (Hash), visualisables via des graphiques interactifs.</li>
+                                <li><strong>Archiver :</strong> En vous offrant un espace privé ("Mon Portfolio") pour cataloguer vos découvertes, noter vos impressions, ajouter des photos et suivre l'évolution de vos goûts au fil du temps.</li>
+                            </ul>
+                            <p class="text-xs text-slate-500 italic mt-2">Connectée en permanence à GitHub, l'application évolue sans cesse tout en garantissant que vos données personnelles restent stockées localement sur votre appareil, en toute sécurité.</p>
+                        </div>
+                        
+                        <!-- Bouton qui lance le Tuto Pop-up -->
+                        <button onclick="openTutorial()" class="bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 px-6 rounded-xl shadow-md transition text-sm w-full flex justify-center items-center gap-2">
+                            🎓 Lancer le Tutoriel Interactif
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Footer Copyright (COMPLET RESTAURÉ) -->
+                <div class="text-center border-t border-slate-100 pt-6 mt-4">
+                    <p class="text-xs text-slate-500 font-medium mb-1">© <span id="year-copy">2024</span> Green Codex App. Tous droits réservés.</p>
+                    <div class="flex justify-center gap-2 text-[10px] text-slate-400">
+                        <a href="#" class="hover:text-emerald-600 underline">Confidentialité</a>
+                        <span>•</span>
+                        <a href="#" class="hover:text-emerald-600 underline">Mentions Légales</a>
+                        <span>•</span>
+                        <a href="#" class="hover:text-emerald-600 underline">GitHub</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. MODALE POP-UP (TUTORIEL & WHAT'S NEW) -->
+    <div id="wn-overlay">
+        <div id="wn-modal">
+            <div class="wn-header">
+                <span id="wn-badge-text" class="wn-badge">Tutoriel</span>
+                <h2 id="wn-main-title" class="wn-title">Guide Rapide</h2>
+            </div>
+            <!-- Zone des slides -->
+            <div id="wn-content" class="wn-slides-container"></div>
+            <!-- Indicateurs points -->
+            <div id="wn-dots" class="wn-dots"></div>
+            <!-- Bouton Suivant -->
+            <button id="wn-btn" onclick="nextSlide()">Suivant ➜</button>
+        </div>
+    </div>
+
+
+    <!-- ======================== SCRIPTS ======================== -->
+    <script>
+        const GITHUB_CONFIG = { username: 'antoto2021', repo: 'Green-Codex' };
+        
+        // Clés de stockage
+        const STORAGE_KEY_HASH = 'app_local_version_hash';
+        const STORAGE_KEY_TIME = 'app_local_update_timestamp'; // Nouvelle clé pour le temps
+        
+        const CHECK_DELAY_MS = 5000;
+        let hasPerformedCheck = false;
+
+        // --- DONNÉES DU TUTORIEL ---
+        const tutorialSlides = [
+            { icon: "👋", title: "Bienvenue !", desc: "Découvrez Green Codex, votre encyclopédie cannabique interactive et personnelle." },
+            { icon: "📖", title: "Encyclopédie", desc: "Explorez les fiches techniques : Indica, Sativa, Dry Sift, Rosin... Tout le savoir à portée de main." },
+            { icon: "📊", title: "Radars", desc: "Visualisez instantanément le profil aromatique et les effets grâce aux graphiques radars dynamiques." },
+            { icon: "⚖️", title: "Comparateur", desc: "Hésitation entre deux variétés ? Superposez leurs graphiques pour voir leurs différences." },
+            { icon: "📂", title: "Collection", desc: "Créez votre 'Pokedex' personnel ! Ajoutez chaque variété que vous goûtez." },
+            { icon: "🔄", title: "Mises à jour", desc: "Connectée à GitHub, l'appli évolue automatiquement. Vos données restent sécurisées sur votre téléphone." }
+        ];
+        
+        // Variables état Tuto
+        let currentSlidesData = [];
+        let currentSlideIndex = 0;
+
+        window.addEventListener('load', () => {
+            document.getElementById('year-copy').innerText = new Date().getFullYear();
+            
+            renderLocalInfo(); // Affiche hash et temps
+
+            // Timer auto
+            startAutoCheck();
+        });
+
+        // --- GESTION TEMPS & AFFICHAGE LOCAL ---
+        function renderLocalInfo() {
+            const localHash = localStorage.getItem(STORAGE_KEY_HASH);
+            const localTime = localStorage.getItem(STORAGE_KEY_TIME);
+
+            document.getElementById('info-app-version').innerText = localHash ? localHash.substring(0, 7) : 'Aucun (Init)';
+            
+            // Calcul du temps écoulé
+            if (localTime) {
+                const diff = Date.now() - parseInt(localTime);
+                const minutes = Math.floor(diff / 60000);
+                const hours = Math.floor(minutes / 60);
+                const days = Math.floor(hours / 24);
+
+                let timeString = "À l'instant";
+                if(days > 0) timeString = `Il y a ${days} jour(s)`;
+                else if(hours > 0) timeString = `Il y a ${hours} heure(s)`;
+                else if(minutes > 0) timeString = `Il y a ${minutes} min`;
+                
+                document.getElementById('info-local-time').innerText = "Mise à jour : " + timeString;
+            } else {
+                document.getElementById('info-local-time').innerText = "Date inconnue";
+            }
+        }
+
+        // --- GESTION GITHUB ---
+        function startAutoCheck() {
+            setTimeout(() => {
+                if (!hasPerformedCheck) checkGitHubUpdates(true);
+            }, CHECK_DELAY_MS);
+        }
+
+        async function fetchLatestCommit() {
+            try {
+                const r = await fetch(`https://api.github.com/repos/${GITHUB_CONFIG.username}/${GITHUB_CONFIG.repo}/commits?per_page=1&t=${Date.now()}`);
+                if (!r.ok) throw new Error();
+                const d = await r.json();
+                return d[0];
+            } catch (e) { return null; }
+        }
+
+        async function checkGitHubUpdates(bg = false) {
+            hasPerformedCheck = true;
+            const remoteEl = document.getElementById('info-remote-version');
+            const statusDot = document.getElementById('connection-status');
+            const btn = document.getElementById('btn-update-check');
+
+            if(!bg) {
+                remoteEl.innerText = "Connexion...";
+                statusDot.className = "w-2 h-2 rounded-full bg-yellow-400 animate-pulse";
+                btn.disabled = true;
+            }
+
+            const commit = await fetchLatestCommit();
+
+            if (commit) {
+                const rHash = commit.sha;
+                const lHash = localStorage.getItem(STORAGE_KEY_HASH);
+                
+                remoteEl.innerText = `Commit: ${rHash.substring(0,7)}`;
+                statusDot.className = "w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]";
+
+                if (!lHash) {
+                    // PREMIER LANCEMENT
+                    localStorage.setItem(STORAGE_KEY_HASH, rHash);
+                    localStorage.setItem(STORAGE_KEY_TIME, Date.now()); // On stocke l'heure
+                    renderLocalInfo(); // Rafraichir l'affichage
+                } else if (lHash !== rHash) {
+                    // UPDATE DISPO
+                    triggerUpdateUI();
+                    remoteEl.innerHTML = `${rHash.substring(0,7)} <span class="bg-amber-100 text-amber-600 text-[9px] px-1 rounded font-bold">NEW</span>`;
+                }
+            } else {
+                if(!bg) { remoteEl.innerText = "Hors ligne"; statusDot.className = "w-2 h-2 rounded-full bg-red-500"; }
+            }
+            btn.disabled = false;
+        }
+
+        function triggerUpdateUI() { document.getElementById('updateContainer').style.display = 'flex'; }
+        
+        function forceUpdate() {
+            const btn = document.getElementById('refreshBtn');
+            btn.classList.add('rotating');
+            setTimeout(() => {
+                fetchLatestCommit().then(commit => {
+                    if(commit) {
+                        localStorage.setItem(STORAGE_KEY_HASH, commit.sha);
+                        localStorage.setItem(STORAGE_KEY_TIME, Date.now()); // MISE A JOUR DE L'HEURE
+                    }
+                    window.location.reload();
+                });
+            }, 800);
+        }
+
+        // --- GESTION MODALE INFO ---
+        function openInfoModal() {
+            document.getElementById('info-modal-overlay').classList.remove('hidden');
+            renderLocalInfo(); // Mettre à jour le texte du temps à l'ouverture
+            checkGitHubUpdates(false);
+        }
+        function closeInfoModal() { document.getElementById('info-modal-overlay').classList.add('hidden'); }
+        function toggleAccordion(id) { document.getElementById(id).classList.toggle('expanded'); }
+
+        // --- GESTION TUTORIEL (POP-UP) ---
+        function openTutorial() {
+            currentSlidesData = tutorialSlides;
+            currentSlideIndex = 0;
+            
+            // Configurer le style du badge pour le Tuto
+            const badge = document.getElementById('wn-badge-text');
+            badge.innerText = "Tutoriel";
+            badge.style.backgroundColor = "#F59E0B"; 
+            badge.style.color = "#fff";
+            document.getElementById('wn-main-title').innerText = "Guide Rapide";
+
+            // Afficher le popup
+            const overlay = document.getElementById('wn-overlay');
+            overlay.style.display = 'flex';
+            setTimeout(() => overlay.classList.add('show-modal'), 10);
+
+            renderSlides();
+            updateSlideUI();
+        }
+
+        function closePopup() {
+            const overlay = document.getElementById('wn-overlay');
+            overlay.classList.remove('show-modal');
+            setTimeout(() => overlay.style.display = 'none', 300);
+        }
+
+        function renderSlides() {
+            const container = document.getElementById('wn-content');
+            const dots = document.getElementById('wn-dots');
+            
+            container.innerHTML = currentSlidesData.map((s, i) => `
+                <div class="wn-slide" id="slide-${i}">
+                    <span class="wn-icon">${s.icon}</span>
+                    <span class="wn-slide-title">${s.title}</span>
+                    <p class="wn-desc">${s.desc}</p>
+                </div>
+            `).join('');
+
+            dots.innerHTML = currentSlidesData.map((_, i) => `<div class="wn-dot"></div>`).join('');
+        }
+
+        function updateSlideUI() {
+            // Afficher la bonne slide
+            document.querySelectorAll('.wn-slide').forEach((el, i) => {
+                el.style.display = i === currentSlideIndex ? 'block' : 'none';
+            });
+            // Mettre à jour les points
+            document.querySelectorAll('.wn-dot').forEach((el, i) => {
+                if(i === currentSlideIndex) el.classList.add('active');
+                else el.classList.remove('active');
+            });
+            // Texte du bouton
+            const btn = document.getElementById('wn-btn');
+            if (currentSlideIndex === currentSlidesData.length - 1) {
+                btn.innerText = "Terminer ✅";
+                btn.style.backgroundColor = "#166534";
+            } else {
+                btn.innerText = "Suivant ➜";
+                btn.style.backgroundColor = "#15803d";
+            }
+        }
+
+        function nextSlide() {
+            if (currentSlideIndex < currentSlidesData.length - 1) {
+                currentSlideIndex++;
+                updateSlideUI();
+            } else {
+                closePopup();
+            }
+        }
+
+        // Fermer le popup en cliquant dehors
+        document.getElementById('wn-overlay').addEventListener('click', function(e) {
+            if (e.target === this) closePopup();
+        });
+    </script>
+</body>
+</html>
