@@ -28,32 +28,40 @@
 
         /* --- BOUTON DE MISE À JOUR FLOTTANT --- */
         #updateContainer {
-            position: fixed; bottom: 20px; right: 20px;
-            display: none; align-items: center; justify-content: flex-end;
+            /* Modification : Positionnement à GAUCHE */
+            position: fixed; bottom: 20px; left: 20px;
+            display: none; align-items: center; justify-content: flex-start;
             z-index: 40; gap: 10px;
         }
         #refreshBtn {
-            background-color: #F54927; color: white; border: none; border-radius: 50%;
+            /* Modification : Couleur Orange contrastante */
+            background-color: #ea580c; 
+            color: white; border: none; border-radius: 50%;
             width: 60px; height: 60px; font-size: 30px; cursor: pointer;
             box-shadow: 0 4px 15px rgba(0,0,0,0.3); display: flex;
-            justify-content: center; align-items: center; transition: transform 0.2s;
+            justify-content: center; align-items: center; transition: transform 0.2s, background-color 0.2s;
             position: relative;
         }
+        #refreshBtn:hover { background-color: #c2410c; }
         #refreshBtn:active { transform: scale(0.95); }
+        
         .update-dot {
             position: absolute; top: 0; right: 0; width: 15px; height: 15px;
             background-color: #ef4444; border-radius: 50%; border: 2px solid white;
         }
         .rotating { animation: spin 1s linear infinite; pointer-events: none; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
         #updateAlert { display: flex; align-items: center; }
         .update-text {
-            color: #166534; font-weight: bold; font-size: 12px; margin-right: 5px;
+            color: #ea580c; /* Texte assorti au bouton */
+            font-weight: bold; font-size: 12px; margin-right: 5px;
             background: rgba(255,255,255,0.95); padding: 6px 12px; border-radius: 8px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1); white-space: nowrap;
         }
-        .bouncing { animation: bounceLeft 1s ease-in-out infinite; }
-        @keyframes bounceLeft { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(-5px); } }
+        /* Animation ajustée pour rebondir vers la droite vu qu'on est à gauche */
+        .bouncing { animation: bounceRight 1s ease-in-out infinite; }
+        @keyframes bounceRight { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(5px); } }
 
         /* --- POP-UP TUTORIEL / SLIDES --- */
         #wn-overlay {
@@ -220,7 +228,7 @@
 
     <!-- ======================== SCRIPTS ======================== -->
     <script>
-        const GITHUB_CONFIG = { username: 'antoto2021', repo: 'Appli-bouton-info' };
+        const GITHUB_CONFIG = { username: 'antoto2021', repo: 'Green-Codex' };
         
         // Clés de stockage
         const STORAGE_KEY_HASH = 'app_local_version_hash';
