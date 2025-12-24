@@ -28,13 +28,13 @@
 
         /* --- BOUTON DE MISE À JOUR FLOTTANT --- */
         #updateContainer {
-            /* Modification : Positionnement à GAUCHE */
             position: fixed; bottom: 20px; left: 20px;
-            display: none; align-items: center; justify-content: flex-start;
+            /* Toujours visible (Flex) pour permettre le refresh manuel */
+            display: flex; 
+            align-items: center; justify-content: flex-start;
             z-index: 40; gap: 10px;
         }
         #refreshBtn {
-            /* Modification : Couleur Orange contrastante */
             background-color: #ea580c; 
             color: white; border: none; border-radius: 50%;
             width: 60px; height: 60px; font-size: 30px; cursor: pointer;
@@ -48,18 +48,23 @@
         .update-dot {
             position: absolute; top: 0; right: 0; width: 15px; height: 15px;
             background-color: #ef4444; border-radius: 50%; border: 2px solid white;
+            /* Caché par défaut, s'affiche via JS si MAJ dispo */
+            display: none; 
         }
         .rotating { animation: spin 1s linear infinite; pointer-events: none; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
-        #updateAlert { display: flex; align-items: center; }
+        #updateAlert { 
+            /* Caché par défaut, s'affiche via JS si MAJ dispo */
+            display: none; 
+            align-items: center; 
+        }
         .update-text {
-            color: #ea580c; /* Texte assorti au bouton */
+            color: #ea580c;
             font-weight: bold; font-size: 12px; margin-right: 5px;
             background: rgba(255,255,255,0.95); padding: 6px 12px; border-radius: 8px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1); white-space: nowrap;
         }
-        /* Animation ajustée pour rebondir vers la droite vu qu'on est à gauche */
         .bouncing { animation: bounceRight 1s ease-in-out infinite; }
         @keyframes bounceRight { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(5px); } }
 
@@ -117,16 +122,17 @@
             Module Info + Tuto + Update<br>
             <span class="text-xs text-slate-400">Auto-check GitHub dans 5s (unique)</span>
         </p>
-        <p>Texte de test pour vérifier si le bouton "refresh" s'affiche seulement lorsqu'une mise à jour est dispo</p>
     </div>
 
     <!-- 2. BOUTON MISE À JOUR FLOTTANT -->
     <div id="updateContainer">
+        <!-- L'alerte ne s'affiche que si MAJ dispo -->
         <div id="updateAlert" class="bouncing">
             <span class="update-text">Nouvelle version dispo !</span>
             <span class="text-emerald-800 text-2xl font-bold">➜</span> 
         </div>
-        <button id="refreshBtn" onclick="forceUpdate()">
+        <button id="refreshBtn" onclick="forceUpdate()" title="Rafraîchir l'application">
+            <!-- Le point rouge ne s'affiche que si MAJ dispo -->
             <div class="update-dot"></div>
             &#x21bb;
         </button>
@@ -149,7 +155,6 @@
                         <div class="border-r border-emerald-200 pr-2">
                             <h3 class="text-[10px] font-bold text-emerald-700 uppercase tracking-widest mb-1">Installée (Local)</h3>
                             <div class="font-mono text-xs font-bold text-slate-700 break-all" id="info-app-version">Check...</div>
-                            <!-- Nouvel élément pour le temps -->
                             <p class="text-[10px] text-emerald-500 mt-1 font-medium" id="info-local-time">Calcul...</p>
                         </div>
                         <!-- REMOTE -->
@@ -167,7 +172,7 @@
                     </button>
                 </div>
 
-                <!-- Bloc À propos avec Tuto (TEXTE COMPLET RESTAURÉ) -->
+                <!-- Bloc À propos avec Tuto -->
                 <div id="about-card" class="bg-white border border-slate-200 p-4 rounded-xl relative shadow-sm transition-all duration-300 hover:shadow-md cursor-pointer" onclick="toggleAccordion('about-card')">
                     <div class="flex items-center justify-between mb-0">
                         <div class="flex items-center gap-3">
@@ -188,14 +193,13 @@
                             <p class="text-xs text-slate-500 italic mt-2">Connectée en permanence à GitHub, l'application évolue sans cesse tout en garantissant que vos données personnelles restent stockées localement sur votre appareil, en toute sécurité.</p>
                         </div>
                         
-                        <!-- Bouton qui lance le Tuto Pop-up -->
                         <button onclick="openTutorial()" class="bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 px-6 rounded-xl shadow-md transition text-sm w-full flex justify-center items-center gap-2">
                             🎓 Lancer le Tutoriel Interactif
                         </button>
                     </div>
                 </div>
 
-                <!-- Footer Copyright (COMPLET RESTAURÉ) -->
+                <!-- Footer Copyright -->
                 <div class="text-center border-t border-slate-100 pt-6 mt-4">
                     <p class="text-xs text-slate-500 font-medium mb-1">© <span id="year-copy">2024</span> Green Codex App. Tous droits réservés.</p>
                     <div class="flex justify-center gap-2 text-[10px] text-slate-400">
@@ -210,18 +214,15 @@
         </div>
     </div>
 
-    <!-- 4. MODALE POP-UP (TUTORIEL & WHAT'S NEW) -->
+    <!-- 4. MODALE POP-UP (TUTORIEL) -->
     <div id="wn-overlay">
         <div id="wn-modal">
             <div class="wn-header">
                 <span id="wn-badge-text" class="wn-badge">Tutoriel</span>
                 <h2 id="wn-main-title" class="wn-title">Guide Rapide</h2>
             </div>
-            <!-- Zone des slides -->
             <div id="wn-content" class="wn-slides-container"></div>
-            <!-- Indicateurs points -->
             <div id="wn-dots" class="wn-dots"></div>
-            <!-- Bouton Suivant -->
             <button id="wn-btn" onclick="nextSlide()">Suivant ➜</button>
         </div>
     </div>
@@ -233,7 +234,7 @@
         
         // Clés de stockage
         const STORAGE_KEY_HASH = 'app_local_version_hash';
-        const STORAGE_KEY_TIME = 'app_local_update_timestamp'; // Nouvelle clé pour le temps
+        const STORAGE_KEY_TIME = 'app_local_update_timestamp';
         
         const CHECK_DELAY_MS = 5000;
         let hasPerformedCheck = false;
@@ -248,16 +249,13 @@
             { icon: "🔄", title: "Mises à jour", desc: "Connectée à GitHub, l'appli évolue automatiquement. Vos données restent sécurisées sur votre téléphone." }
         ];
         
-        // Variables état Tuto
         let currentSlidesData = [];
         let currentSlideIndex = 0;
 
         window.addEventListener('load', () => {
             document.getElementById('year-copy').innerText = new Date().getFullYear();
             
-            renderLocalInfo(); // Affiche hash et temps
-
-            // Timer auto
+            renderLocalInfo(); 
             startAutoCheck();
         });
 
@@ -268,7 +266,6 @@
 
             document.getElementById('info-app-version').innerText = localHash ? localHash.substring(0, 7) : 'Aucun (Init)';
             
-            // Calcul du temps écoulé
             if (localTime) {
                 const diff = Date.now() - parseInt(localTime);
                 const minutes = Math.floor(diff / 60000);
@@ -326,11 +323,11 @@
                 if (!lHash) {
                     // PREMIER LANCEMENT
                     localStorage.setItem(STORAGE_KEY_HASH, rHash);
-                    localStorage.setItem(STORAGE_KEY_TIME, Date.now()); // On stocke l'heure
-                    renderLocalInfo(); // Rafraichir l'affichage
+                    localStorage.setItem(STORAGE_KEY_TIME, Date.now()); 
+                    renderLocalInfo(); 
                 } else if (lHash !== rHash) {
-                    // UPDATE DISPO
-                    triggerUpdateUI();
+                    // MISE À JOUR DISPO
+                    triggerUpdateAlert(); // Seulement l'alerte visuelle
                     remoteEl.innerHTML = `${rHash.substring(0,7)} <span class="bg-amber-100 text-amber-600 text-[9px] px-1 rounded font-bold">NEW</span>`;
                 }
             } else {
@@ -339,16 +336,21 @@
             btn.disabled = false;
         }
 
-        function triggerUpdateUI() { document.getElementById('updateContainer').style.display = 'flex'; }
+        function triggerUpdateAlert() { 
+            // Affiche UNIQUEMENT l'alerte et le point rouge, le bouton est déjà là
+            document.getElementById('updateAlert').style.display = 'flex';
+            document.querySelector('.update-dot').style.display = 'block';
+        }
         
         function forceUpdate() {
             const btn = document.getElementById('refreshBtn');
             btn.classList.add('rotating');
             setTimeout(() => {
                 fetchLatestCommit().then(commit => {
+                    // On enregistre la dernière version trouvée avant de rafraîchir
                     if(commit) {
                         localStorage.setItem(STORAGE_KEY_HASH, commit.sha);
-                        localStorage.setItem(STORAGE_KEY_TIME, Date.now()); // MISE A JOUR DE L'HEURE
+                        localStorage.setItem(STORAGE_KEY_TIME, Date.now()); 
                     }
                     window.location.reload();
                 });
@@ -358,7 +360,7 @@
         // --- GESTION MODALE INFO ---
         function openInfoModal() {
             document.getElementById('info-modal-overlay').classList.remove('hidden');
-            renderLocalInfo(); // Mettre à jour le texte du temps à l'ouverture
+            renderLocalInfo(); 
             checkGitHubUpdates(false);
         }
         function closeInfoModal() { document.getElementById('info-modal-overlay').classList.add('hidden'); }
@@ -368,15 +370,12 @@
         function openTutorial() {
             currentSlidesData = tutorialSlides;
             currentSlideIndex = 0;
-            
-            // Configurer le style du badge pour le Tuto
             const badge = document.getElementById('wn-badge-text');
             badge.innerText = "Tutoriel";
             badge.style.backgroundColor = "#F59E0B"; 
             badge.style.color = "#fff";
             document.getElementById('wn-main-title').innerText = "Guide Rapide";
 
-            // Afficher le popup
             const overlay = document.getElementById('wn-overlay');
             overlay.style.display = 'flex';
             setTimeout(() => overlay.classList.add('show-modal'), 10);
@@ -407,16 +406,13 @@
         }
 
         function updateSlideUI() {
-            // Afficher la bonne slide
             document.querySelectorAll('.wn-slide').forEach((el, i) => {
                 el.style.display = i === currentSlideIndex ? 'block' : 'none';
             });
-            // Mettre à jour les points
             document.querySelectorAll('.wn-dot').forEach((el, i) => {
                 if(i === currentSlideIndex) el.classList.add('active');
                 else el.classList.remove('active');
             });
-            // Texte du bouton
             const btn = document.getElementById('wn-btn');
             if (currentSlideIndex === currentSlidesData.length - 1) {
                 btn.innerText = "Terminer ✅";
@@ -435,8 +431,6 @@
                 closePopup();
             }
         }
-
-        // Fermer le popup en cliquant dehors
         document.getElementById('wn-overlay').addEventListener('click', function(e) {
             if (e.target === this) closePopup();
         });
