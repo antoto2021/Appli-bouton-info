@@ -121,7 +121,6 @@
         <p class="text-center text-slate-500 text-sm max-w-xs">
             Module Info + Tuto + Update<br>
             <span class="text-xs text-slate-400">Auto-check GitHub dans 5s (unique)</span>
-            <p>Texte de test pour vérifier le rafraichissement de la page</p>
         </p>
     </div>
 
@@ -231,7 +230,19 @@
 
     <!-- ======================== SCRIPTS ======================== -->
     <script>
-        const GITHUB_CONFIG = { username: 'antoto2021', repo: 'Appli-bouton-info' };
+        // ============================================================
+        // ⚠️ CONFIGURATION GITHUB (MODIFIEZ ICI) ⚠️
+        // ============================================================
+        const GITHUB_CONFIG = { 
+            // 1. Votre nom d'utilisateur GitHub (ou organisation)
+            username: 'antoto2021', 
+            
+            // 2. Le nom EXACT de votre dépôt (Repository)
+            // Assurez-vous que ce dépôt est PUBLIC
+            repo: 'Green-Codex' 
+        };
+        // ============================================================
+
         
         // Clés de stockage
         const STORAGE_KEY_HASH = 'app_local_version_hash';
@@ -293,7 +304,12 @@
 
         async function fetchLatestCommit() {
             try {
-                const r = await fetch(`https://api.github.com/repos/${GITHUB_CONFIG.username}/${GITHUB_CONFIG.repo}/commits?per_page=1&t=${Date.now()}`);
+                const url = `https://api.github.com/repos/${GITHUB_CONFIG.username}/${GITHUB_CONFIG.repo}/commits?per_page=1&t=${Date.now()}`;
+                const r = await fetch(url);
+                
+                // Gestion spécifique de l'erreur 404 (Repo non trouvé)
+                if (r.status === 404) return 'repo_not_found';
+                
                 if (!r.ok) throw new Error();
                 const d = await r.json();
                 return d[0];
@@ -314,7 +330,13 @@
 
             const commit = await fetchLatestCommit();
 
-            if (commit) {
+            if (commit === 'repo_not_found') {
+                if(!bg) {
+                    remoteEl.innerText = "Repo introuvable";
+                    statusDot.className = "w-2 h-2 rounded-full bg-red-500";
+                    alert("⚠️ Attention : Le dépôt GitHub configuré n'existe pas ou est privé.\nVérifiez la configuration en bas du script.");
+                }
+            } else if (commit) {
                 const rHash = commit.sha;
                 const lHash = localStorage.getItem(STORAGE_KEY_HASH);
                 
@@ -348,8 +370,8 @@
             btn.classList.add('rotating');
             setTimeout(() => {
                 fetchLatestCommit().then(commit => {
-                    // On enregistre la dernière version trouvée avant de rafraîchir
-                    if(commit) {
+                    // Si le commit est valide (pas une erreur string)
+                    if(commit && typeof commit === 'object') {
                         localStorage.setItem(STORAGE_KEY_HASH, commit.sha);
                         localStorage.setItem(STORAGE_KEY_TIME, Date.now()); 
                     }
